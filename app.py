@@ -1,73 +1,118 @@
 import streamlit as st
-from graphviz import Digraph
+import uuid
 
-st.set_page_config(layout="centered")
+st.set_page_config(page_title="Comparador de Árvores", layout="wide")
+st.title("🌳 Comparador de Árvores Binárias")
 
-# Nomes fixos para os nós
-nodes = ["A", "B", "C", "D", "E", "F", "G"]
+# Inicializa valores e títulos no estado da sessão
+if "arvore1" not in st.session_state:
+    st.session_state.arvore1 = [""] * 7
+if "arvore2" not in st.session_state:
+    st.session_state.arvore2 = [""] * 7
 
-def build_tree(inputs, tree_id):
-    dot = Digraph()
-    color = "black"
-    
-    edges = [
-        ("A", "B"), ("A", "C"),
-        ("B", "D"), ("B", "E"),
-        ("C", "F"), ("C", "G")
-    ]
+if "titulos_arvore1" not in st.session_state:
+    st.session_state.titulos_arvore1 = [f"Nó {i+1}" for i in range(7)]
+if "titulos_arvore2" not in st.session_state:
+    st.session_state.titulos_arvore2 = [f"Nó {i+1}" for i in range(7)]
 
-    for node in nodes:
-        value = inputs.get(f"{tree_id}_{node}", "")
-        color = "black"
-        if f"{tree_id}_{node}_color" in inputs:
-            color = inputs[f"{tree_id}_{node}_color"]
-        dot.node(f"{tree_id}_{node}", str(value), style="filled", fillcolor=color, fontcolor="white" if color == "green" else "black")
+# Função para criar input do valor do nó
+def input_no_valor(id_arvore, i, valor):
+    key = f"{id_arvore}-valor-{i}-{uuid.uuid4()}"
+    return st.text_input(f"Valor {i+1}", value=valor, key=key, max_chars=3)
 
-    for a, b in edges:
-        dot.edge(f"{tree_id}_{a}", f"{tree_id}_{b}")
+# Função para criar input do título do nó
+def input_no_titulo(id_arvore, i, titulo):
+    key = f"{id_arvore}-titulo-{i}-{uuid.uuid4()}"
+    return st.text_input(f"Título {i+1}", value=titulo, key=key)
 
-    return dot
+# Inputs para árvore 1
+st.subheader("Árvore 1")
+for i in range(7):
+    st.session_state.arvore1[i] = input_no_valor("arvore1", i, st.session_state.arvore1[i])
+for i in range(7):
+    st.session_state.titulos_arvore1[i] = input_no_titulo("arvore1", i, st.session_state.titulos_arvore1[i])
 
+# Inputs para árvore 2
+st.subheader("Árvore 2")
+for i in range(7):
+    st.session_state.arvore2[i] = input_no_valor("arvore2", i, st.session_state.arvore2[i])
+for i in range(7):
+    st.session_state.titulos_arvore2[i] = input_no_titulo("arvore2", i, st.session_state.titulos_arvore2[i])
 
-def compare_trees(inputs1, inputs2):
-    result_colors_1 = {}
-    result_colors_2 = {}
-
-    for node in nodes:
-        val1 = inputs1.get(f"tree1_{node}", 0)
-        val2 = inputs2.get(f"tree2_{node}", 0)
-
-        if val1 > val2:
-            result_colors_1[f"tree1_{node}_color"] = "green"
-            result_colors_2[f"tree2_{node}_color"] = "black"
-        elif val2 > val1:
-            result_colors_2[f"tree2_{node}_color"] = "green"
-            result_colors_1[f"tree1_{node}_color"] = "black"
+# Compara valores para cores
+cores1 = [""] * 7
+cores2 = [""] * 7
+for i in range(7):
+    try:
+        n1 = float(st.session_state.arvore1[i])
+        n2 = float(st.session_state.arvore2[i])
+        if n1 > n2:
+            cores1[i] = "green"
+            cores2[i] = ""
+        elif n2 > n1:
+            cores2[i] = "green"
+            cores1[i] = ""
         else:
-            result_colors_1[f"tree1_{node}_color"] = "black"
-            result_colors_2[f"tree2_{node}_color"] = "black"
+            cores1[i] = cores2[i] = ""
+    except:
+        cores1[i] = cores2[i] = ""
 
-    return result_colors_1, result_colors_2
+# Função para desenhar árvore com títulos dinâmicos
+def desenhar_arvore(id_arvore, valores, cores, titulos):
+    st.markdown(f"""
+    <style>
+        .container-{id_arvore} {{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 40px;
+        }}
+        .linha {{
+            display: flex;
+            justify-content: center;
+            margin: 5px 0;
+        }}
+        .no {{
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 8px;
+            font-weight: bold;
+            background-color: lightgray;
+            cursor: default;
+        }}
+        .no.verde {{
+            background-color: #a6e6a1;
+            border-color: green;
+        }}
+    </style>
 
-st.title("Comparador de Árvores Binárias")
+    <div class="container-{id_arvore}">
+        <div class="linha">
+            <div class="no {'verde' if cores[0] == 'green' else ''}" title="{titulos[0]}">{valores[0]}</div>
+        </div>
+        <div class="linha">
+            <div class="no {'verde' if cores[1] == 'green' else ''}" title="{titulos[1]}">{valores[1]}</div>
+            <div class="no {'verde' if cores[2] == 'green' else ''}" title="{titulos[2]}">{valores[2]}</div>
+        </div>
+        <div class="linha">
+            <div class="no {'verde' if cores[3] == 'green' else ''}" title="{titulos[3]}">{valores[3]}</div>
+            <div class="no {'verde' if cores[4] == 'green' else ''}" title="{titulos[4]}">{valores[4]}</div>
+            <div class="no {'verde' if cores[5] == 'green' else ''}" title="{titulos[5]}">{valores[5]}</div>
+            <div class="no {'verde' if cores[6] == 'green' else ''}" title="{titulos[6]}">{valores[6]}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-st.subheader("Preencha os valores da Árvore 1")
-tree1_inputs = {}
-for node in nodes:
-    tree1_inputs[f"tree1_{node}"] = st.number_input(f"Árvore 1 - Nó {node}", key=f"tree1_{node}", step=1)
+col1, col2 = st.columns(2)
+with col1:
+    st.subheader("Visualização Árvore 1")
+    desenhar_arvore("arvore1", st.session_state.arvore1, cores1, st.session_state.titulos_arvore1)
 
-st.subheader("Preencha os valores da Árvore 2")
-tree2_inputs = {}
-for node in nodes:
-    tree2_inputs[f"tree2_{node}"] = st.number_input(f"Árvore 2 - Nó {node}", key=f"tree2_{node}", step=1)
-
-if st.button("Comparar Árvores"):
-    colors1, colors2 = compare_trees(tree1_inputs, tree2_inputs)
-    tree1_inputs.update(colors1)
-    tree2_inputs.update(colors2)
-
-    st.subheader("Resultado - Árvore 1")
-    st.graphviz_chart(build_tree(tree1_inputs, "tree1"))
-
-    st.subheader("Resultado - Árvore 2")
-    st.graphviz_chart(build_tree(tree2_inputs, "tree2"))
+with col2:
+    st.subheader("Visualização Árvore 2")
+    desenhar_arvore("arvore2", st.session_state.arvore2, cores2, st.session_state.titulos_arvore2)
