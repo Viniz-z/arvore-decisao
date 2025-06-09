@@ -1,118 +1,73 @@
 import streamlit as st
-import uuid
+import streamlit.components.v1 as components
 
-st.set_page_config(page_title="Comparador de Árvores", layout="wide")
-st.title("🌳 Comparador de Árvores Binárias")
+st.set_page_config(page_title="Árvore Interativa", layout="wide")
 
-# Inicializa valores e títulos no estado da sessão
-if "arvore1" not in st.session_state:
-    st.session_state.arvore1 = [""] * 7
-if "arvore2" not in st.session_state:
-    st.session_state.arvore2 = [""] * 7
-
-if "titulos_arvore1" not in st.session_state:
-    st.session_state.titulos_arvore1 = [f"Nó {i+1}" for i in range(7)]
-if "titulos_arvore2" not in st.session_state:
-    st.session_state.titulos_arvore2 = [f"Nó {i+1}" for i in range(7)]
-
-# Função para criar input do valor do nó
-def input_no_valor(id_arvore, i, valor):
-    key = f"{id_arvore}-valor-{i}-{uuid.uuid4()}"
-    return st.text_input(f"Valor {i+1}", value=valor, key=key, max_chars=3)
-
-# Função para criar input do título do nó
-def input_no_titulo(id_arvore, i, titulo):
-    key = f"{id_arvore}-titulo-{i}-{uuid.uuid4()}"
-    return st.text_input(f"Título {i+1}", value=titulo, key=key)
-
-# Inputs para árvore 1
-st.subheader("Árvore 1")
-for i in range(7):
-    st.session_state.arvore1[i] = input_no_valor("arvore1", i, st.session_state.arvore1[i])
-for i in range(7):
-    st.session_state.titulos_arvore1[i] = input_no_titulo("arvore1", i, st.session_state.titulos_arvore1[i])
-
-# Inputs para árvore 2
-st.subheader("Árvore 2")
-for i in range(7):
-    st.session_state.arvore2[i] = input_no_valor("arvore2", i, st.session_state.arvore2[i])
-for i in range(7):
-    st.session_state.titulos_arvore2[i] = input_no_titulo("arvore2", i, st.session_state.titulos_arvore2[i])
-
-# Compara valores para cores
-cores1 = [""] * 7
-cores2 = [""] * 7
-for i in range(7):
-    try:
-        n1 = float(st.session_state.arvore1[i])
-        n2 = float(st.session_state.arvore2[i])
-        if n1 > n2:
-            cores1[i] = "green"
-            cores2[i] = ""
-        elif n2 > n1:
-            cores2[i] = "green"
-            cores1[i] = ""
-        else:
-            cores1[i] = cores2[i] = ""
-    except:
-        cores1[i] = cores2[i] = ""
-
-# Função para desenhar árvore com títulos dinâmicos
-def desenhar_arvore(id_arvore, valores, cores, titulos):
-    st.markdown(f"""
-    <style>
-        .container-{id_arvore} {{
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 40px;
-        }}
-        .linha {{
-            display: flex;
-            justify-content: center;
-            margin: 5px 0;
-        }}
-        .no {{
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid #333;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0 8px;
-            font-weight: bold;
-            background-color: lightgray;
-            cursor: default;
-        }}
-        .no.verde {{
-            background-color: #a6e6a1;
-            border-color: green;
-        }}
-    </style>
-
-    <div class="container-{id_arvore}">
-        <div class="linha">
-            <div class="no {'verde' if cores[0] == 'green' else ''}" title="{titulos[0]}">{valores[0]}</div>
-        </div>
-        <div class="linha">
-            <div class="no {'verde' if cores[1] == 'green' else ''}" title="{titulos[1]}">{valores[1]}</div>
-            <div class="no {'verde' if cores[2] == 'green' else ''}" title="{titulos[2]}">{valores[2]}</div>
-        </div>
-        <div class="linha">
-            <div class="no {'verde' if cores[3] == 'green' else ''}" title="{titulos[3]}">{valores[3]}</div>
-            <div class="no {'verde' if cores[4] == 'green' else ''}" title="{titulos[4]}">{valores[4]}</div>
-            <div class="no {'verde' if cores[5] == 'green' else ''}" title="{titulos[5]}">{valores[5]}</div>
-            <div class="no {'verde' if cores[6] == 'green' else ''}" title="{titulos[6]}">{valores[6]}</div>
-        </div>
+html_code = """
+<div style="display: flex; justify-content: space-around; flex-wrap: wrap;">
+  <div style="text-align: center;">
+    <h3>Árvore 1</h3>
+    <div id="arvore1" style="display: flex; flex-direction: column; align-items: center;">
+      """ + ''.join(f'<button onclick="editarValor(this, 1, {i})" class="no" id="no1-{i}">0</button>' for i in range(7)) + """
     </div>
-    """, unsafe_allow_html=True)
+  </div>
+  <div style="text-align: center;">
+    <h3>Árvore 2</h3>
+    <div id="arvore2" style="display: flex; flex-direction: column; align-items: center;">
+      """ + ''.join(f'<button onclick="editarValor(this, 2, {i})" class="no" id="no2-{i}">0</button>' for i in range(7)) + """
+    </div>
+  </div>
+</div>
 
-col1, col2 = st.columns(2)
-with col1:
-    st.subheader("Visualização Árvore 1")
-    desenhar_arvore("arvore1", st.session_state.arvore1, cores1, st.session_state.titulos_arvore1)
+<style>
+  .no {
+    margin: 5px;
+    padding: 15px;
+    border-radius: 50%;
+    border: 2px solid #000;
+    background-color: lightgray;
+    font-weight: bold;
+    width: 50px;
+    height: 50px;
+    font-size: 16px;
+  }
+  .verde {
+    background-color: #a6e6a1 !important;
+    border-color: green;
+  }
+</style>
 
-with col2:
-    st.subheader("Visualização Árvore 2")
-    desenhar_arvore("arvore2", st.session_state.arvore2, cores2, st.session_state.titulos_arvore2)
+<script>
+  function editarValor(elem, arvore, index) {
+    let novo = prompt("Novo valor:", elem.innerText);
+    if (novo !== null) {
+      novo = parseFloat(novo);
+      if (!isNaN(novo)) {
+        elem.innerText = novo;
+        comparar();
+      }
+    }
+  }
+
+  function comparar() {
+    for (let i = 0; i < 7; i++) {
+      let no1 = document.getElementById("no1-" + i);
+      let no2 = document.getElementById("no2-" + i);
+      let v1 = parseFloat(no1.innerText);
+      let v2 = parseFloat(no2.innerText);
+
+      no1.classList.remove("verde");
+      no2.classList.remove("verde");
+
+      if (!isNaN(v1) && !isNaN(v2)) {
+        if (v1 > v2) no1.classList.add("verde");
+        else if (v2 > v1) no2.classList.add("verde");
+      }
+    }
+  }
+
+  setTimeout(comparar, 100);
+</script>
+"""
+
+components.html(html_code, height=600)
